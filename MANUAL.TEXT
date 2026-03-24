@@ -1,0 +1,370 @@
+DYNAMIC SURGE PRICING E‑COMMERCE ENGINE COMPLETE A‑TO‑Z IMPLEMENTATION
+GUIDE (Big Data Project using Hadoop + Spark)
+
+Author Guide Version: 1.0
+
+============================================================ 1. PROJECT
+OVERVIEW ============================================================
+
+Project Name: Dynamic Surge Pricing E‑Commerce Engine
+
+Goal: Build a real‑time system that automatically adjusts product prices
+based on user demand using Big Data technologies.
+
+Core Technologies: - Hadoop (HDFS storage) - Apache Spark (data
+processing and ML) - Kafka (event streaming) - Python (data generation
+and ML) - React / HTML (UI) - NodeJS / Python API (backend)
+
+Real companies using similar systems: Amazon Uber Airbnb Airlines
+
+The system simulates an e‑commerce store where product prices change
+automatically based on demand.
+
+Example: Normal demand → $199 High demand → $230 Low demand → $180
+
+The system reads user behavior data and updates price in real time.
+
+============================================================ 2. PROBLEM
+STATEMENT ============================================================
+
+Traditional e‑commerce websites use static pricing.
+
+Example: Product price = $200 It stays $200 until a human changes it.
+
+Problems: 1. Sudden demand spikes cannot be captured 2. Competitor price
+changes are ignored 3. Inventory shortages are not handled dynamically
+4. Revenue opportunities are lost
+
+Solution: Build a real‑time pricing engine that analyzes:
+
+-   User clicks
+-   Add to cart actions
+-   Purchases
+-   Inventory levels
+-   Competitor prices
+
+and automatically adjusts product prices.
+
+============================================================ 3. SYSTEM
+ARCHITECTURE
+============================================================
+
+User Click Simulator ↓ Kafka Event Stream ↓ Spark Streaming ↓ Demand
+Analysis ↓ ML Model Prediction ↓ Optimal Price Calculation ↓ Update
+Database ↓ Frontend UI shows new price
+
+Historical Data Storage: All data stored in Hadoop HDFS.
+
+============================================================ 4. SYSTEM
+REQUIREMENTS
+============================================================
+
+Hardware: Minimum:
+
+CPU: i5 / Ryzen 5 RAM: 16 GB recommended Storage: 50 GB free space
+
+Software:
+
+Ubuntu 22.04 Java JDK 8 Hadoop 3.x Spark 3.x Python 3.10 Kafka NodeJS
+Git
+
+============================================================ 5.
+INSTALLING UBUNTU
+============================================================
+
+Option 1: Dual boot Option 2: Virtual machine (VirtualBox) Option 3: WSL
+(Windows Subsystem for Linux)
+
+Recommended: Dual boot
+
+Steps:
+
+Download Ubuntu ISO Create bootable USB using Rufus Restart computer
+Install Ubuntu
+
+============================================================ 6. INSTALL
+JAVA ============================================================
+
+sudo apt update sudo apt install openjdk-8-jdk
+
+Check:
+
+java -version
+
+============================================================ 7. INSTALL
+HADOOP ============================================================
+
+Download Hadoop
+
+wget https://downloads.apache.org/hadoop/common/hadoop-3.3.6.tar.gz
+
+Extract
+
+tar -xvzf hadoop-3.3.6.tar.gz
+
+Move folder
+
+sudo mv hadoop-3.3.6 /usr/local/hadoop
+
+Add environment variables
+
+nano ~/.bashrc
+
+Add:
+
+export HADOOP_HOME=/usr/local/hadoop export
+PATH=PATH:HADOOP_HOME/bin:$HADOOP_HOME/sbin
+
+Apply:
+
+source ~/.bashrc
+
+============================================================ 8.
+CONFIGURE HADOOP
+============================================================
+
+Edit files:
+
+core-site.xml hdfs-site.xml mapred-site.xml yarn-site.xml
+
+Set namenode path
+
+Create directories:
+
+mkdir ~/hadoopdata
+
+Format HDFS:
+
+hdfs namenode -format
+
+Start Hadoop:
+
+start-dfs.sh start-yarn.sh
+
+Check running services:
+
+jps
+
+Expected:
+
+NameNode DataNode ResourceManager NodeManager
+
+============================================================ 9. INSTALL
+SPARK ============================================================
+
+Download Spark
+
+wget
+https://downloads.apache.org/spark/spark-3.5.1/spark-3.5.1-bin-hadoop3.tgz
+
+Extract:
+
+tar -xvzf spark-3.5.1-bin-hadoop3.tgz
+
+Move:
+
+sudo mv spark-3.5.1-bin-hadoop3 /usr/local/spark
+
+Add environment variables:
+
+export SPARK_HOME=/usr/local/spark export PATH=PATH:SPARK_HOME/bin
+
+============================================================ 10. CONNECT
+SPARK WITH HADOOP
+============================================================
+
+Spark reads data from HDFS.
+
+Example:
+
+spark.read.csv(“hdfs://localhost:9000/data/clicks.csv”)
+
+============================================================ 11. DATA
+GENERATION ============================================================
+
+Since you do not have real users, simulate traffic.
+
+Python script generates events.
+
+Example events:
+
+user_id,product_id,event_type,time
+
+view cart purchase
+
+Example generator:
+
+1000 users 500 products random events
+
+============================================================ 12. KAFKA
+STREAMING ============================================================
+
+Kafka receives click events.
+
+Producer:
+
+Python click generator
+
+Consumer:
+
+Spark streaming
+
+Kafka Topic:
+
+clickstream_topic
+
+============================================================ 13. SPARK
+STREAM PROCESSING
+============================================================
+
+Spark processes events every 10 seconds.
+
+Calculate:
+
+views add to cart purchases
+
+Conversion rate:
+
+purchases / views
+
+============================================================ 14. MACHINE
+LEARNING MODEL
+============================================================
+
+Model predicts demand elasticity.
+
+Input features:
+
+views cart adds purchases inventory competitor price
+
+Output:
+
+optimal price
+
+Recommended models:
+
+Linear Regression Random Forest Gradient Boosting
+
+Spark MLlib can train models.
+
+============================================================ 15. PRICE
+OPTIMIZATION LOGIC
+============================================================
+
+Example rule:
+
+High demand + low inventory → increase price
+
+Low demand + high inventory → decrease price
+
+Profit calculation:
+
+profit = price × expected_sales
+
+============================================================ 16.
+DATABASE ============================================================
+
+Use PostgreSQL or MongoDB.
+
+Tables:
+
+products price_history inventory
+
+============================================================ 17. API
+LAYER ============================================================
+
+Backend API built using:
+
+NodeJS / FastAPI
+
+Endpoints:
+
+GET /products GET /price POST /update_price
+
+Spark updates database through API.
+
+============================================================ 18.
+FRONTEND UI ============================================================
+
+Simple e‑commerce webpage.
+
+Tools:
+
+React HTML CSS JavaScript
+
+Product page example:
+
+Sony Headphones Price: $199
+
+Price updates automatically.
+
+============================================================ 19. DEMO
+SCENARIO ============================================================
+
+Scenario 1: Traffic spike.
+
+Clicks increase.
+
+Price increases.
+
+Scenario 2: Competitor price drops.
+
+System lowers price.
+
+============================================================ 20. TESTING
+============================================================
+
+Run click simulator.
+
+Generate:
+
+10,000 events per minute.
+
+Observe:
+
+Spark processing Price updates
+
+============================================================ 21. PROJECT
+PRESENTATION
+============================================================
+
+Screen 1:
+
+Terminal showing streaming data.
+
+Screen 2:
+
+Website showing live price changes.
+
+============================================================ 22. HOW TO
+SUCCEED ============================================================
+
+Focus on:
+
+Working pipeline Clean architecture Clear explanation
+
+Judges care about:
+
+Understanding system design.
+
+============================================================ 23. FINAL
+DELIVERABLES
+============================================================
+
+Working system
+
+Source code
+
+Documentation
+
+Demo video
+
+============================================================ 24. PROJECT
+FLOW SUMMARY
+============================================================
+
+Click Generator → Kafka → Spark Streaming → ML Prediction → Price
+Optimization → Database Update → Website UI
+
+============================================================ END OF
+GUIDE ============================================================

@@ -1,99 +1,149 @@
-# PulsePrice — Startup Guide
-# Run these commands IN ORDER on Ubuntu
+# PulsePrice — Complete Startup Guide
 
-## Step 1: SSH from Windows PowerShell (open 4 separate terminals)
-```
-ssh jeevan@10.235.174.241
-```
+This guide covers how to set up and run the PulsePrice application, whether you're deploying everything to the Ubuntu server or doing hybrid local development on Windows.
 
-## Step 2: In SSH Terminal 1 — Start Infrastructure
+## ⚠️ Critical Rule Before Starting!
+1. Kafka MUST be running before Spark and the Simulator.
+2. The `clickstream_topic` MUST exist in Kafka before starting Spark.
+3. The ML Model **MUST be trained** before starting Spark (`pricing_model.pkl` must exist).
+4. PostgreSQL must be running.
+
+---
+
+## 🏗️ Option A: Run Everything on the Ubuntu Server (Production Setup)
+
+If you are running the entire stack directly on the Ubuntu machine (`ssh jeevan@10.235.174.241`):
+
+### Step 1: Start Infrastructure Services
+Open **Terminal 1** and start the core data layers:
 ```bash
-# Start Hadoop
+# 1. Start Hadoop (HDFS & YARN)
 start-dfs.sh
 start-yarn.sh
 
-# Verify (should show NameNode, DataNode, ResourceManager, NodeManager)
+# Verify Hadoop components are running (expect NameNode, DataNode, ResourceManager, NodeManager)
 jps
 
-# Start Zookeeper + Kafka
+# 2. Start Zookeeper & Kafka
 /usr/local/kafka/bin/zookeeper-server-start.sh -daemon /usr/local/kafka/config/zookeeper.properties
 /usr/local/kafka/bin/kafka-server-start.sh -daemon /usr/local/kafka/config/server.properties
 
-# Wait 5 seconds, then create topic
+# Wait 5 seconds to ensure Kafka starts, then create the topic
 sleep 5
-/usr/local/kafka/bin/kafka-topics.sh --create --topic clickstream_topic --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --if-not-exists
+/usr/local/kafka/bin/kafka-topics.sh --create --topic clickstream_topic \
+  --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1 --if-not-exists
 
-# Verify topic exists
-/usr/local/kafka/bin/kafka-topics.sh --list --bootstrap-server localhost:9092
-
-# PostgreSQL (auto-starts, but just in case)
+# 3. Ensure PostgreSQL is running
 sudo systemctl start postgresql
 ```
 
-## Step 3: Train ML Model (FIRST TIME ONLY)
+### Step 2: First-Time Setup (Train the ML Model)
+*You only need to do this the very first time, or if you update the codebase for the ML model.*
 ```bash
 cd ~/pulseprice
-source venv/bin/activate
+source venv/bin/activate  # Activate your Python virtual environment
+
 cd ml
-python3 generate_training_data.py   # Creates 50,000 training rows
-python3 train_model.py              # Trains Random Forest → saves pricing_model.pkl
-python3 price_predictor.py          # Test: shows sample predictions
+python3 generate_training_data.py   # Generates 50,000 historic events
+python3 train_model.py              # Trains Random Forest and saves `pricing_model.pkl`
+python3 price_predictor.py          # Quick test to verify predictions work
+cd ..
 ```
-> Only need to do this once. After training, the model file (pricing_model.pkl) persists.
 
-## Step 4: In SSH Terminal 1 — Start Click Simulator
-```bash
-cd ~/pulseprice/data_generator
-python3 click_simulator.py 10
-```
-> Keep running! Generates 10 events/sec
+### Step 3: Run the Microservices
+You will need **4 separate terminal windows** for this (via tmux, screen, or opening new SSH tabs). Ensure your Python virtual environment is activated in each Python terminal!
 
-## Step 5: In SSH Terminal 2 — Start Spark Streaming (ML-Powered!)
+**Terminal 1 — Spark Streaming (The Brain)**
 ```bash
 cd ~/pulseprice/spark
+source ../venv/bin/activate
 python3 streaming_processor.py
 ```
-> Keep running! Uses ML model to predict prices every 10 seconds
 
-## Step 6: In SSH Terminal 3 — Start FastAPI
-```bash
-cd ~/pulseprice/api
-python3 main.py
-```
-> Keep running! API on port 8000
-
-## Step 7: In SSH Terminal 4 — Start React Frontend
-```bash
-cd ~/pulseprice/frontend
-npm run dev
-```
-> Keep running! UI on port 3000
-
-## Open in Browser (from your Windows)
-- **API Docs:** http://10.235.174.241:8000/docs
-- **PulsePrice UI:** http://10.235.174.241:3000
-
-## IMPORTANT ORDER
-1. Kafka MUST be running before Spark & Simulator
-2. Topic MUST exist before starting Spark
-3. ML model MUST be trained before Spark (pricing_model.pkl must exist)
-4. Start Simulator BEFORE or right after Spark
-5. FastAPI and Frontend can start anytime after PostgreSQL
-
-## To Stop Everything
-- Press Ctrl+C in each terminal
-- Then: `stop-yarn.sh && stop-dfs.sh`
-- Kafka: `/usr/local/kafka/bin/kafka-server-stop.sh && /usr/local/kafka/bin/zookeeper-server-stop.sh`
-
-## If DB needs re-seeding (prices reset to base)
+**Terminal 2 — Data Generator (Simulates live traffic)**
 ```bash
 cd ~/pulseprice/data_generator
+source ../venv/bin/activate
+python3 click_simulator.py 10
+# > Keep running! Generates 10 events/sec sent to Kafka
+```
+
+**Terminal 3 — FastAPI Backend**
+```bash
+cd ~/pulseprice/api
+source ../venv/bin/activate
+python3 main.py
+# > API runs on port 8000
+```
+
+**Terminal 4 — React Frontend**
+```bash
+cd ~/pulseprice/frontend
+npm install   # Only needed the first time
+npm run dev
+# > UI runs on port 3000
+```
+
+### Step 4: Access the Application
+Open your browser on Windows and navigate to:
+- **PulsePrice Web UI:** `http://10.235.174.241:3000`
+- **FastAPI Documentation:** `http://10.235.174.241:8000/docs`
+
+---
+
+## 💻 Option B: Run API & UI Locally on Windows (Hybrid Local Development)
+
+If you've cloned the codebase to Windows (`C:\Users\Kotha\Desktop\bda`) to develop the UI or API locally, but the heavy infrastructure is still on Ubuntu:
+
+1. **Start Big Data Infra on Ubuntu:** SSH into the server and complete **Step 1** & **Step 2** from above.
+2. **Start Spark & Simulator on Ubuntu:** Start them via SSH (Terminal 1 and 2 from above). They need to connect to Kafka efficiently.
+3. **Run API locally (Windows PowerShell):**
+   ```powershell
+   cd C:\Users\Kotha\Desktop\bda
+   python -m venv venv
+   .\venv\Scripts\activate
+   # Install required dependencies:
+   pip install fastapi uvicorn psycopg2 sqlalchemy pydantic ...
+   
+   cd api
+   python main.py
+   ```
+   *(Ensure any PostgreSQL connection URLs in `database.py` point to `10.235.174.241` instead of `localhost`)*
+   
+4. **Run React Frontend locally (Windows PowerShell):**
+   ```powershell
+   cd C:\Users\Kotha\Desktop\bda\frontend
+   npm install
+   npm run dev
+   ```
+   *(Vite will output a local URL, e.g., `http://localhost:5173`. Make sure the frontend's `.env` points the API connection to your local API or the Ubuntu API).*
+
+---
+
+## 🛑 How to Stop Everything Cleanly
+
+1. Press `Ctrl+C` in the terminals running Frontend, API, Simulator, and Spark.
+2. Stop Hadoop gracefully:
+   ```bash
+   stop-yarn.sh
+   stop-dfs.sh
+   ```
+3. Stop Kafka and Zookeeper gracefully:
+   ```bash
+   /usr/local/kafka/bin/kafka-server-stop.sh
+   /usr/local/kafka/bin/zookeeper-server-stop.sh
+   ```
+
+## 🛠️ Maintenance Commands
+
+**If prices get wildly out of hand (too high/low) and you need to reset the database back to base configuration:**
+```bash
+cd ~/pulseprice/data_generator
+source ../venv/bin/activate
 python3 seed_database.py
 ```
 
-## Re-train ML Model (if you change training data)
-```bash
-cd ~/pulseprice/ml
-python3 generate_training_data.py
-python3 train_model.py
-```
+**If you need to change how the model decides prices:**
+1. Alter `generate_training_data.py`.
+2. Re-run `generate_training_data.py` followed by `train_model.py`.
+3. Restart Spark Streaming so it loads the new `pricing_model.pkl`.
