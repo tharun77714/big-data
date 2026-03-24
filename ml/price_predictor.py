@@ -73,7 +73,7 @@ def predict_price(base_price, current_price, view_count, cart_count,
         base_price_tier, demand_score, conversion_rate, cart_conversion
     ]])
 
-    multiplier = model.predict(features)[0]
+    multiplier = float(model.predict(features)[0])  # cast numpy→Python float
 
     # REALISTIC clamps: max ±10% from base price
     multiplier = max(0.90, min(1.12, multiplier))
@@ -92,7 +92,7 @@ def predict_price(base_price, current_price, view_count, cart_count,
     price_ceiling = base_price * 1.12
     new_price = max(price_floor, min(price_ceiling, new_price))
 
-    return round(new_price, 2)
+    return float(round(new_price, 2))  # ensure plain Python float for psycopg2
 
 
 def _fallback_pricing(base_price, current_price, view_count, cart_count,

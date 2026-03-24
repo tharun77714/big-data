@@ -189,7 +189,7 @@ def run_streaming():
     query = (aggregated.writeStream
              .outputMode("update")
              .foreachBatch(update_prices)
-             .trigger(processingTime="5 minutes")
+             .trigger(processingTime="30 seconds")
              .start())
 
     print("✅ Spark Streaming started! Processing every 5 minutes...")
