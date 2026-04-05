@@ -6,11 +6,9 @@ const FEATURES = [
   { name: 'Demand Score', importance: 92, col: '#8b5cf6' },
   { name: 'Purchase Rate', importance: 78, col: '#3b82f6' },
   { name: 'Cart Conversion', importance: 65, col: '#06b6d4' },
-  { name: 'Stock Level', importance: 58, col: '#10b981' },
-  { name: 'Competitor Price', importance: 52, col: '#f59e0b' },
-  { name: 'View Count', importance: 41, col: '#ec4899' },
-  { name: 'Hour of Day', importance: 28, col: '#6366f1' },
-  { name: 'Day of Week', importance: 19, col: '#94a3b8' },
+  { name: 'View Count', importance: 48, col: '#10b981' },
+  { name: 'Hour of Day', importance: 32, col: '#6366f1' },
+  { name: 'Day of Week', importance: 22, col: '#94a3b8' },
 ];
 
 export default function AIInsights() {

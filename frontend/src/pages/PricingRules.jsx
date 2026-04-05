@@ -13,7 +13,7 @@ const STRATEGIES = [
   { id: 'aggressive', label: '🔥 Aggressive', desc: 'Maximize revenue — price high when demand peaks' },
   { id: 'balanced', label: '⚖️ Balanced', desc: 'Steady optimization with moderate adjustments' },
   { id: 'conservative', label: '🛡️ Conservative', desc: 'Minimal changes — prioritize price stability' },
-  { id: 'competitor', label: '⚔️ Match Competitor', desc: 'Stay within 2% of competitor pricing' },
+  { id: 'demand', label: '📊 Demand-Driven', desc: 'Adjust prices purely based on real-time demand signals' },
 ];
 
 export default function PricingRules() {

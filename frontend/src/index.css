@@ -258,14 +258,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .ctrl-toggle.on{background:linear-gradient(135deg,var(--purple),var(--blue));border-color:var(--purple)}
 .ctrl-toggle-knob{position:absolute;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.3)}
 
-/* ── Competitor Tab ──────────────────────────────────────────── */
-.comp-tab{display:flex;flex-direction:column;gap:12px}
-.comp-row{display:grid;grid-template-columns:90px 1fr 72px;align-items:center;gap:10px}
-.comp-row-label{font-size:11px;color:var(--text2);font-weight:600}
-.comp-bar-bg{height:8px;border-radius:100px;background:rgba(255,255,255,.07);overflow:hidden}
-.comp-bar-fill{height:100%;border-radius:100px}
-.comp-val{font-family:var(--mono);font-size:13px;font-weight:700;text-align:right}
-.comp-status{font-size:12px;font-weight:600;padding:10px 14px;border-radius:10px;background:var(--glass2);border:1px solid var(--border);margin-top:4px}
+
+
 
 /* ── Toast ───────────────────────────────────────────────────── */
 .toast-wrap{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px}

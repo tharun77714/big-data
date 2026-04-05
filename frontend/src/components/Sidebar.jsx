@@ -6,14 +6,12 @@ import { usePricing } from '../context/PricingContext.jsx';
 const NAV = [
   { to: '/',         icon: '🏠', label: 'Dashboard',     exact: true },
   { to: '/analytics',icon: '📊', label: 'Analytics' },
-  { to: '/alerts',   icon: '🔔', label: 'Alerts',        badge: true },
   { to: '/ai',       icon: '🤖', label: 'AI Insights' },
   { to: '/rules',    icon: '⚙️', label: 'Pricing Rules' },
 ];
 
 export default function Sidebar({ collapsed, onToggle }) {
-  const { alerts, connected } = usePricing();
-  const alertCount = alerts.filter(a => a.severity === 'high').length;
+  const { connected } = usePricing();
 
   return (
     <motion.aside
@@ -56,11 +54,7 @@ export default function Sidebar({ collapsed, onToggle }) {
                     </motion.span>
                   )}
                 </AnimatePresence>
-                {badge && alertCount > 0 && (
-                  <motion.span className="sb-badge" initial={{ scale: 0 }} animate={{ scale: 1 }}>
-                    {alertCount}
-                  </motion.span>
-                )}
+
               </>
             )}
           </NavLink>

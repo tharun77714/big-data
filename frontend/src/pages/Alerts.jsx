@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePricing } from '../context/PricingContext.jsx';
 
-const ICONS = { demand: '🔥', stock: '📦', competitor: '⚔️', surge: '📈' };
+const ICONS = { demand: '🔥', surge: '📈' };
 const SEV_COL = { high: 'var(--red)', medium: 'var(--purple)', info: 'var(--blue)' };
 
 export default function Alerts() {

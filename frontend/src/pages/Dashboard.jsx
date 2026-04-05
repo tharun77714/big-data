@@ -7,14 +7,9 @@ import { usePricing, API_URL } from '../context/PricingContext.jsx';
 function getAIReason(p) {
   const chg = ((p.current_price - p.base_price) / p.base_price * 100);
   const d = p.demand_score || 0;
-  const st = p.stock_level || 100;
-  const comp = p.competitor_price;
   const parts = [];
   if (d > 0.65) parts.push(`high demand (${(d * 100).toFixed(0)}% intensity)`);
   else if (d < 0.3) parts.push(`weak demand signals`);
-  if (st < 25) parts.push(`critically low stock (${st} units)`);
-  else if (st > 300) parts.push(`excess inventory (${st} units)`);
-  if (comp && comp < p.current_price * 0.95) parts.push(`competitor undercut by ${(((p.current_price - comp) / p.current_price) * 100).toFixed(1)}%`);
   if (chg > 5) return `Price surged +${chg.toFixed(1)}% due to ${parts.join(', ') || 'market conditions'}.`;
   if (chg < -3) return `Price dropped ${chg.toFixed(1)}% due to ${parts.join(', ') || 'low conversion rate'}.`;
   return `Price is stable${parts.length ? ` despite ${parts.join(', ')}` : ''} — within optimal range.`;
@@ -22,9 +17,8 @@ function getAIReason(p) {
 
 function getAISuggestedPrice(p) {
   const d = p.demand_score || 0;
-  const st = p.stock_level || 100;
   let mult = 1.0;
-  if (d > 0.7 && st < 30) mult = 1.10;
+  if (d > 0.7) mult = 1.08;
   else if (d > 0.5) mult = 1.04;
   else if (d < 0.25) mult = 0.95;
   const suggested = Math.max(p.base_price * 0.88, Math.min(p.base_price * 1.12, p.base_price * mult));
@@ -113,36 +107,16 @@ function Toast({ toasts }) {
 // ── Custom Tooltip ─────────────────────────────────────────────
 function ChartTip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
+  const time = label ? new Date(label) : null;
+  const timeStr = time && !isNaN(time) ? time.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
   return (
     <div className="chart-tip">
-      <p style={{ color: 'var(--text3)', fontSize: 10, marginBottom: 4, fontFamily: 'var(--mono)' }}>{new Date(label).toLocaleTimeString()}</p>
+      {timeStr && <p style={{ color: 'var(--text3)', fontSize: 10, marginBottom: 4, fontFamily: 'var(--mono)' }}>{timeStr}</p>}
       <p style={{ fontFamily: 'var(--mono)', fontSize: 15, fontWeight: 700, color: 'var(--purple2)' }}>${Number(payload[0].value).toFixed(2)}</p>
     </div>
   );
 }
 
-// ── Market Mood ───────────────────────────────────────────────
-function MarketMood({ products }) {
-  const surges = products.filter(p => p.current_price > p.base_price * 1.01).length;
-  const drops = products.filter(p => p.current_price < p.base_price * 0.99).length;
-  const total = products.length || 1;
-  const score = Math.round((surges / total) * 100);
-  const mood = score > 60 ? { label: 'GREED', col: '#f43f5e' } : score > 40 ? { label: 'NEUTRAL', col: '#6366f1' } : { label: 'FEAR', col: '#10b981' };
-  return (
-    <div className="mood-card">
-      <div className="mood-label">Market Mood</div>
-      <div className="mood-bar-wrap">
-        <div className="mood-bar">
-          <motion.div className="mood-fill" style={{ background: mood.col }}
-            initial={{ width: 0 }} animate={{ width: `${score}%` }} transition={{ duration: 1, ease: 'easeOut' }} />
-        </div>
-        <div className="mood-ends"><span style={{ color: '#10b981' }}>FEAR</span><span style={{ color: '#f43f5e' }}>GREED</span></div>
-      </div>
-      <div className="mood-score" style={{ color: mood.col }}>{score}<span>/100</span></div>
-      <div className="mood-tag" style={{ color: mood.col }}>{mood.label}</div>
-    </div>
-  );
-}
 
 // ── Product Card ──────────────────────────────────────────────
 const cardVariants = {
@@ -186,7 +160,7 @@ function ProductCard({ product, onClick, isSelected }) {
 }
 
 // ── Detail Panel with Tabs ────────────────────────────────────
-const TABS = ['Overview', 'Demand', 'AI Reason', 'Controls', 'Competitor'];
+const TABS = ['Overview', 'Demand', 'AI Reason', 'Controls'];
 
 function DetailPanel({ product, history, onClose }) {
   const [tab, setTab] = useState('Overview');
@@ -251,8 +225,8 @@ function DetailPanel({ product, history, onClose }) {
               {[
                 { label: 'Base Price', val: `$${Number(product.base_price).toFixed(2)}` },
                 { label: 'Demand Score', val: (product.demand_score || 0).toFixed(3) },
-                { label: 'Stock Level', val: product.stock_level },
-                { label: 'Competitor', val: `$${Number(product.competitor_price || 0).toFixed(2)}` },
+                { label: 'Views', val: product.view_count || 0 },
+                { label: 'Purchases', val: product.purchase_count || 0 },
               ].map(({ label, val }) => (
                 <div key={label} className="dp-stat">
                   <div className="dp-stat-label">{label}</div>
@@ -310,7 +284,7 @@ function DetailPanel({ product, history, onClose }) {
               {history.length > 1 && (
                 <div className="dp-chart">
                   <h3>📈 Price History</h3>
-                  <ResponsiveContainer width="100%" height={160}>
+                  <ResponsiveContainer width="100%" height={180}>
                     <AreaChart data={history}>
                       <defs>
                         <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
@@ -319,6 +293,9 @@ function DetailPanel({ product, history, onClose }) {
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
+                      <XAxis dataKey="recorded_at" stroke="rgba(255,255,255,0.15)" fontSize={9}
+                        tickFormatter={v => { const d = new Date(v); return d && !isNaN(d) ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''; }}
+                        interval="preserveStartEnd" minTickGap={40} />
                       <YAxis domain={['auto', 'auto']} stroke="rgba(255,255,255,0.15)" fontSize={9} tickFormatter={v => `$${v}`} width={48} />
                       <Tooltip content={<ChartTip />} />
                       <Area type="monotone" dataKey="price" stroke="#8b5cf6" strokeWidth={2}
@@ -364,37 +341,7 @@ function DetailPanel({ product, history, onClose }) {
             </div>
           )}
 
-          {tab === 'Competitor' && (
-            <div className="comp-tab">
-              {[
-                { label: 'Our Price', val: Number(product.current_price), col: 'var(--purple)' },
-                { label: 'Competitor', val: Number(product.competitor_price || product.base_price * 1.05), col: 'var(--blue)' },
-                { label: 'Base Price', val: Number(product.base_price), col: 'var(--text3)' },
-              ].map(({ label, val, col }) => {
-                const maxVal = Math.max(Number(product.current_price), Number(product.competitor_price || 0), Number(product.base_price)) * 1.1;
-                return (
-                  <div key={label} className="comp-row">
-                    <div className="comp-row-label">{label}</div>
-                    <div className="comp-bar-bg">
-                      <motion.div className="comp-bar-fill" style={{ background: col }}
-                        initial={{ width: 0 }} animate={{ width: `${(val / maxVal) * 100}%` }}
-                        transition={{ duration: 0.8, ease: 'easeOut' }} />
-                    </div>
-                    <div className="comp-val" style={{ color: col }}>${val.toFixed(2)}</div>
-                  </div>
-                );
-              })}
-              {product.competitor_price && (
-                <div className="comp-status" style={{
-                  color: product.current_price > product.competitor_price ? 'var(--red)' : 'var(--green)'
-                }}>
-                  {product.current_price > product.competitor_price
-                    ? `⚠️ We're ${(((product.current_price - product.competitor_price) / product.competitor_price) * 100).toFixed(1)}% pricier than competitor`
-                    : `✅ We're ${(((product.competitor_price - product.current_price) / product.competitor_price) * 100).toFixed(1)}% cheaper than competitor`}
-                </div>
-              )}
-            </div>
-          )}
+
         </motion.div>
       </AnimatePresence>
     </motion.div>
@@ -405,22 +352,32 @@ function DetailPanel({ product, history, onClose }) {
 const containerVar = { hidden: {}, show: { transition: { staggerChildren: 0.05 } } };
 
 export default function Dashboard() {
-  const { products, priceEvents, alerts } = usePricing();
+  const { products, priceEvents } = usePricing();
   const [selectedId, setSelectedId] = useState(null);
   const [history, setHistory] = useState([]);
   const [search, setSearch] = useState('');
+  const [filterType, setFilterType] = useState('all');
 
   const selected = products.find(p => p.id === selectedId);
-  const critAlerts = alerts.filter(a => a.severity === 'high').slice(0, 2);
-  const filtered = products.filter(p =>
-    p.name.toLowerCase().includes(search.toLowerCase()) ||
-    p.category.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = products.filter(p => {
+    const searchMatch = p.name.toLowerCase().includes(search.toLowerCase()) || p.category.toLowerCase().includes(search.toLowerCase());
+    if (!searchMatch) return false;
+    if (filterType === 'all') return true;
+    const c = ((p.current_price - p.base_price) / p.base_price * 100);
+    if (filterType === 'surge') return c > 1;
+    if (filterType === 'drop') return c < -1;
+    return true;
+  });
 
   useEffect(() => {
     if (!selectedId) return;
     fetch(`${API_URL}/products/${selectedId}/history?limit=40`)
-      .then(r => r.json()).then(d => setHistory((d.history || []).reverse())).catch(() => {});
+      .then(r => r.json())
+      .then(d => {
+        const hist = (d.history || []).reverse();
+        setHistory(hist);
+      })
+      .catch(() => {});
   }, [selectedId, products]);
 
   const surges = products.filter(p => p.current_price > p.base_price * 1.01).length;
@@ -432,32 +389,31 @@ export default function Dashboard() {
       {/* KPI Row */}
       <motion.div className="kpi-row" variants={containerVar} initial="hidden" animate="show">
         {[
-          { icon: '📦', label: 'Total Products', val: products.length, col: 'rgba(59,130,246,.18)', glow: 'rgba(59,130,246,.3)' },
-          { icon: '🔥', label: 'Active Surges', val: surges, col: 'rgba(244,63,94,.18)', glow: 'rgba(244,63,94,.3)' },
-          { icon: '💚', label: 'Active Drops', val: drops, col: 'rgba(16,185,129,.18)', glow: 'rgba(16,185,129,.3)' },
-          { icon: '💰', label: 'Avg Price', val: `$${avg}`, col: 'rgba(139,92,246,.18)', glow: 'rgba(139,92,246,.4)' },
-        ].map(({ icon, label, val, col, glow }) => (
-          <motion.div key={label} className="kpi-card" variants={cardVariants}
-            whileHover={{ y: -4, boxShadow: `0 12px 32px ${glow}` }}
-            style={{ '--card-glow': glow }}>
-            <div className="kpi-icon" style={{ background: col }}>{icon}</div>
-            <div>
-              <div className="kpi-label">{label}</div>
-              <div className="kpi-val">{val}</div>
-            </div>
-            <div className="kpi-shimmer" />
-          </motion.div>
-        ))}
+          { id: 'total', icon: '📦', label: 'Total Products', val: products.length, col: 'rgba(59,130,246,.18)', glow: 'rgba(59,130,246,.3)' },
+          { id: 'surge', icon: '🔥', label: 'Active Surges', val: surges, col: 'rgba(244,63,94,.18)', glow: 'rgba(244,63,94,.3)' },
+          { id: 'drop', icon: '💚', label: 'Active Drops', val: drops, col: 'rgba(16,185,129,.18)', glow: 'rgba(16,185,129,.3)' },
+          { id: 'avg', icon: '💰', label: 'Avg Price', val: `$${avg}`, col: 'rgba(139,92,246,.18)', glow: 'rgba(139,92,246,.4)' },
+        ].map(({ id, icon, label, val, col, glow }) => {
+          const isFilter = id === 'surge' || id === 'drop';
+          const isActive = filterType === id;
+          return (
+            <motion.div key={label} className="kpi-card" variants={cardVariants}
+              onClick={() => isFilter && setFilterType(prev => prev === id ? 'all' : id)}
+              whileHover={{ y: -4, boxShadow: `0 12px 32px ${glow}` }}
+              style={{ '--card-glow': glow, cursor: isFilter ? 'pointer' : 'default', borderColor: isActive ? glow : 'var(--border)' }}>
+              <div className="kpi-icon" style={{ background: col }}>{icon}</div>
+              <div>
+                <div className="kpi-label">{label}</div>
+                <div className="kpi-val">{val}</div>
+              </div>
+              {isActive && <motion.div layoutId="kpi-active" className="kpi-active-indicator" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, border: `2px solid ${glow}`, borderRadius: '18px', zIndex: -1 }} />}
+              <div className="kpi-shimmer" />
+            </motion.div>
+          );
+        })}
       </motion.div>
 
-      {/* Alerts Banner */}
-      <AnimatePresence>
-        {critAlerts.length > 0 && (
-          <motion.div className="alert-banner" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-            🔴 {critAlerts.map(a => a.msg).join('  ·  ')}
-          </motion.div>
-        )}
-      </AnimatePresence>
+
 
       {/* Ticker */}
       {products.length > 0 && (
@@ -475,21 +431,18 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Market Mood + Price Events */}
-      <div className="dash-meta-row">
-        <MarketMood products={products} />
-        {priceEvents.length > 0 && (
-          <div className="event-feed-mini">
-            <div className="ef-title">⚡ Recent Changes</div>
-            {priceEvents.slice(0, 4).map(ev => (
-              <motion.div key={ev.id} className={`ef-item ${ev.dir}`}
-                initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-                {ev.name.split(' ').slice(0, 2).join(' ')} {ev.dir === 'up' ? '▲' : '▼'} ${Math.abs(ev.new - ev.old).toFixed(2)}
-              </motion.div>
-            ))}
-          </div>
-        )}
-      </div>
+      {/* Recent Price Changes */}
+      {priceEvents.length > 0 && (
+        <div className="event-feed-mini" style={{ marginBottom: 20 }}>
+          <div className="ef-title">⚡ Recent Changes</div>
+          {priceEvents.slice(0, 4).map(ev => (
+            <motion.div key={ev.id} className={`ef-item ${ev.dir}`}
+              initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+              {ev.name.split(' ').slice(0, 2).join(' ')} {ev.dir === 'up' ? '▲' : '▼'} ${Math.abs(ev.new - ev.old).toFixed(2)}
+            </motion.div>
+          ))}
+        </div>
+      )}
 
       {/* Main grid */}
       <div className="dash-grid">

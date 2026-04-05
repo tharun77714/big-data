@@ -14,26 +14,7 @@ export function PricingProvider({ children }) {
   const [priceEvents, setPriceEvents] = useState([]);
   const prevPricesRef = useRef({});
 
-  // Auto-compute alerts from live product states
-  const alerts = products.flatMap(p => {
-    const list = [];
-    const changePct = ((p.current_price - p.base_price) / p.base_price * 100);
-    const demand = p.demand_score || 0;
-    const stock = p.stock_level || 100;
-    if (demand > 0.65)
-      list.push({ id: `dem-${p.id}`, type: 'demand', severity: 'high', product: p,
-        msg: `High demand spike on ${p.name}`, detail: `Demand score ${demand.toFixed(2)} — consider raising price` });
-    if (stock < 25)
-      list.push({ id: `stk-${p.id}`, type: 'stock', severity: 'medium', product: p,
-        msg: `Low stock: ${p.name}`, detail: `Only ${stock} units left — scarcity pricing opportunity` });
-    if (p.competitor_price && p.competitor_price < p.current_price * 0.95)
-      list.push({ id: `cmp-${p.id}`, type: 'competitor', severity: 'high', product: p,
-        msg: `Competitor undercut: ${p.name}`, detail: `Competitor at $${Number(p.competitor_price).toFixed(2)} vs your $${Number(p.current_price).toFixed(2)}` });
-    if (changePct > 9)
-      list.push({ id: `srg-${p.id}`, type: 'surge', severity: 'info', product: p,
-        msg: `Major surge: ${p.name}`, detail: `Price up ${changePct.toFixed(1)}% from base — monitor closely` });
-    return list;
-  });
+
 
   useEffect(() => {
     let wsRetry, statsRetry;
@@ -94,7 +75,7 @@ export function PricingProvider({ children }) {
   }, []);
 
   return (
-    <PricingContext.Provider value={{ products, stats, connected, priceEvents, alerts, API_URL }}>
+    <PricingContext.Provider value={{ products, stats, connected, priceEvents, API_URL }}>
       {children}
     </PricingContext.Provider>
   );
