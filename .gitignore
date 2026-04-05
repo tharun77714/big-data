@@ -1,0 +1,34 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+.env/
+*.egg-info/
+dist/
+build/
+
+# --- NodeJS / Frontend ---
+node_modules/
+dist-ssr/
+*.local
+.vscode/
+
+# --- System / Logs ---
+.DS_Store
+Thumbs.db
+*.log
+tmp/
+
+# --- Project Specific ---
+docs/FINAL_ARCHITECTURE.md
+docs/FINAL_DEPLOYMENT_GUIDE.md
+docs/FINAL_WORKFLOW.md
+# (We keep DEMO_DAY and QUICK_DEMO as they are for the presentation)
+
+# Hadoop/Spark Checkpoints (if local)
+checkpoint/
+metastore_db/
+spark-warehouse/

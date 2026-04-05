@@ -13,7 +13,7 @@ np.random.seed(42)
 NUM_SAMPLES = 50000
 
 def generate_training_data():
-    print("🔧 Generating 50,000 training samples (realistic pricing)...")
+    print("Generating 100,000 training samples (realistic pricing)...")
 
     # --- Generate Features ---
     view_count = np.random.exponential(scale=40, size=NUM_SAMPLES).astype(int)
@@ -127,8 +127,8 @@ def generate_training_data():
     output_path = os.path.join(os.path.dirname(__file__), 'training_data.csv')
     df.to_csv(output_path, index=False)
 
-    print(f"✅ Generated {len(df)} training samples → {output_path}")
-    print(f"\n📊 Price Multiplier Distribution:")
+    print(f"Data generation complete: {len(df)} samples -> {output_path}")
+    print(f"\nPrice Multiplier Distribution:")
     print(f"   Min:    {df['price_multiplier'].min():.4f}  ({(df['price_multiplier'].min()-1)*100:+.1f}%)")
     print(f"   Max:    {df['price_multiplier'].max():.4f}  ({(df['price_multiplier'].max()-1)*100:+.1f}%)")
     print(f"   Mean:   {df['price_multiplier'].mean():.4f}  ({(df['price_multiplier'].mean()-1)*100:+.1f}%)")

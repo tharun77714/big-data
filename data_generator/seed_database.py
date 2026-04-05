@@ -5,11 +5,12 @@ Creates tables and seeds initial product data into PostgreSQL
 """
 
 import json
+import os
 import psycopg2
 from psycopg2.extras import execute_values
 
 DB_CONFIG = {
-    'host': 'localhost',
+    'host': '172.25.199.101',
     'database': 'pulseprice_db',
     'user': 'pulseprice',
     'password': 'pulse2024',
@@ -77,8 +78,9 @@ def seed_database():
     conn.commit()
     print("✅ Tables created!")
 
-    # Load products
-    with open('/home/jeevan/pulseprice/data_generator/products.json', 'r') as f:
+    # Load products (use relative path for portability)
+    _products_path = os.path.join(os.path.dirname(__file__), 'products.json')
+    with open(_products_path, 'r') as f:
         products = json.load(f)
 
     print(f"🛍️ Seeding {len(products)} products...")

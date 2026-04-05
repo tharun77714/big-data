@@ -51,7 +51,17 @@ cd ..
 ```
 
 ### Step 3: Run the Microservices
-You will need **4 separate terminal windows** for this (via tmux, screen, or opening new SSH tabs). Ensure your Python virtual environment is activated in each Python terminal!
+## The "Two-Terminal" Demo Setup
+
+For the most professional look during a demo, we consolidate the backend services into one terminal.
+
+```
+Terminal 1: Unified Backend  → (Simulator + Spark + API)
+                               Handles traffic, ML logic, and data serving.
+Terminal 2: React Dev Server → Serves the WEBSITE (UI) to your browser.
+```
+
+**Background services (Remote):** Hadoop, Kafka, Zookeeper, PostgreSQL (Running on the Linux machine).
 
 **Terminal 1 — Spark Streaming (The Brain)**
 ```bash
@@ -91,32 +101,23 @@ Open your browser on Windows and navigate to:
 
 ---
 
-## 💻 Option B: Run API & UI Locally on Windows (Hybrid Local Development)
+## 💻 Windows Setup (The "One-Command" Demo Way)
 
-If you've cloned the codebase to Windows (`C:\Users\Kotha\Desktop\bda`) to develop the UI or API locally, but the heavy infrastructure is still on Ubuntu:
+For the most stable and impressive demo, use the unified launcher which handles all backend services in a single terminal.
 
-1. **Start Big Data Infra on Ubuntu:** SSH into the server and complete **Step 1** & **Step 2** from above.
-2. **Start Spark & Simulator on Ubuntu:** Start them via SSH (Terminal 1 and 2 from above). They need to connect to Kafka efficiently.
-3. **Run API locally (Windows PowerShell):**
+1. **Start Infrastructure on Ubuntu:** Start Zookeeper, Kafka, and Postgres on the remote machine.
+2. **Find the Ubuntu IP:** Use `hostname -I` on the Linux machine.
+3. **Launch Unified Backend (Terminal 1):**
    ```powershell
-   cd C:\Users\Kotha\Desktop\bda
-   python -m venv venv
-   .\venv\Scripts\activate
-   # Install required dependencies:
-   pip install fastapi uvicorn psycopg2 sqlalchemy pydantic ...
-   
-   cd api
-   python main.py
+   python run_backend.py <UBUNTU_IP>
    ```
-   *(Ensure any PostgreSQL connection URLs in `database.py` point to `10.235.174.241` instead of `localhost`)*
+   *This starts the API, Spark Processing, and Traffic Generator together with tagged logs.*
    
-4. **Run React Frontend locally (Windows PowerShell):**
+4. **Launch React Frontend (Terminal 2):**
    ```powershell
-   cd C:\Users\Kotha\Desktop\bda\frontend
-   npm install
+   cd frontend
    npm run dev
    ```
-   *(Vite will output a local URL, e.g., `http://localhost:5173`. Make sure the frontend's `.env` points the API connection to your local API or the Ubuntu API).*
 
 ---
 

@@ -22,7 +22,7 @@ def load_data():
         print("❌ training_data.csv not found! Run generate_training_data.py first.")
         exit(1)
     df = pd.read_csv(data_path)
-    print(f"📂 Loaded {len(df)} training samples")
+    print(f"Loaded {len(df)} training samples")
     return df
 
 
@@ -46,38 +46,23 @@ def train_model(X, y, feature_cols):
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42
     )
-    print(f"📊 Train set: {len(X_train)} | Test set: {len(X_test)}")
+    print(f"Train set: {len(X_train)} | Test set: {len(X_test)}")
 
     # --- Model 1: Random Forest (Primary) ---
-    print("\n🌲 Training Random Forest Regressor with GridSearchCV...")
-    rf_params = {
-        'n_estimators': [100, 200, 300],
-        'max_depth': [10, 15, 20, None],
-        'min_samples_split': [2, 5, 10],
-        'min_samples_leaf': [1, 2, 4],
-    }
-
-    # Use a smaller grid for speed, but still effective
-    rf_fast_params = {
-        'n_estimators': [150, 250],
-        'max_depth': [12, 18, None],
-        'min_samples_split': [2, 5],
-        'min_samples_leaf': [1, 3],
-    }
-
-    rf = RandomForestRegressor(random_state=42, n_jobs=-1)
-    grid_search = GridSearchCV(
-        rf, rf_fast_params,
-        cv=5,               # 5-fold cross-validation
-        scoring='r2',        # Optimize for R² score
-        verbose=1,
-        n_jobs=-1
+    print("\nTraining Random Forest Regressor (Speed Optimized)...")
+    
+    # Use a high-quality single parameter set (Ultra-fast for demo)
+    best_rf = RandomForestRegressor(
+        n_estimators=100, 
+        max_depth=12, 
+        min_samples_split=5, 
+        min_samples_leaf=2,
+        random_state=42, 
+        n_jobs=2
     )
-    grid_search.fit(X_train, y_train)
-
-    best_rf = grid_search.best_estimator_
-    print(f"\n✅ Best hyperparameters: {grid_search.best_params_}")
-    print(f"   Best CV R² score: {grid_search.best_score_:.4f}")
+    
+    print("   Fitting model to 100,000 samples...")
+    best_rf.fit(X_train, y_train)
 
     # --- Evaluate on Test Set ---
     y_pred = best_rf.predict(X_test)
@@ -86,7 +71,7 @@ def train_model(X, y, feature_cols):
     mae = mean_absolute_error(y_test, y_pred)
     rmse = np.sqrt(mean_squared_error(y_test, y_pred))
 
-    print(f"\n📈 Test Set Performance:")
+    print(f"\nTest Set Performance:")
     print(f"   R² Score:                {r2:.4f}  (1.0 = perfect)")
     print(f"   Mean Absolute Error:     {mae:.4f}  (avg error in multiplier)")
     print(f"   Root Mean Squared Error: {rmse:.4f}")
@@ -97,19 +82,18 @@ def train_model(X, y, feature_cols):
     importances = best_rf.feature_importances_
     sorted_idx = np.argsort(importances)[::-1]
 
-    print(f"\n🔑 Feature Importance (what drives pricing decisions):")
+    print(f"\nFeature Importance (what drives pricing decisions):")
     for i, idx in enumerate(sorted_idx):
-        bar = '█' * int(importances[idx] * 50)
-        print(f"   {i+1}. {feature_cols[idx]:25s} {importances[idx]:.4f}  {bar}")
+        print(f"   {i+1}. {feature_cols[idx]:25s} {importances[idx]:.4f}")
 
     # --- Cross-validation on full dataset for robust score ---
-    print(f"\n🔄 5-Fold Cross-Validation on full dataset...")
+    print(f"\n5-Fold Cross-Validation on full dataset...")
     cv_scores = cross_val_score(best_rf, X, y, cv=5, scoring='r2', n_jobs=-1)
     print(f"   CV R² scores: {[f'{s:.4f}' for s in cv_scores]}")
     print(f"   Mean CV R²:   {cv_scores.mean():.4f} ± {cv_scores.std():.4f}")
 
     # --- Sample Predictions (sanity check) ---
-    print(f"\n🧪 Sample Predictions vs Actual:")
+    print(f"\nSample Predictions vs Actual:")
     print(f"   {'Actual':>8s}  {'Predicted':>10s}  {'Error':>8s}  {'Scenario':>30s}")
     for i in range(min(10, len(X_test))):
         actual = y_test[i]
@@ -136,7 +120,7 @@ def save_model(model, feature_cols):
         pickle.dump(model_data, f)
     
     model_size = os.path.getsize(model_path) / (1024 * 1024)
-    print(f"\n💾 Model saved to {model_path} ({model_size:.1f} MB)")
+    print(f"\nModel saved to {model_path} ({model_size:.1f} MB)")
     return model_path
 
 
@@ -150,7 +134,7 @@ def main():
     model = train_model(X, y, feature_cols)
     save_model(model, feature_cols)
 
-    print("\n🎉 Training complete! Model ready for deployment.")
+    print("\nTraining complete! Model ready for deployment.")
     print("   Next: Run streaming_processor.py to use ML-powered pricing.\n")
 
 

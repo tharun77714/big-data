@@ -80,8 +80,8 @@ def predict_price(base_price, current_price, view_count, cart_count,
 
     new_price = base_price * multiplier
 
-    # Gradual change: max ±2% per update from current price
-    max_change = current_price * 0.02
+    # Gradual change: max ±5% per update from current price (faster for demo)
+    max_change = current_price * 0.05
     if new_price > current_price + max_change:
         new_price = current_price + max_change
     elif new_price < current_price - max_change:

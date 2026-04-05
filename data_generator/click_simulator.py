@@ -5,6 +5,7 @@ Generates realistic user behaviour events and sends to Kafka
 """
 
 import json
+import os
 import random
 import time
 import uuid
@@ -12,11 +13,12 @@ from datetime import datetime
 from kafka import KafkaProducer
 
 # Kafka configuration
-KAFKA_BOOTSTRAP_SERVERS = ['localhost:9092']
+KAFKA_BOOTSTRAP_SERVERS = ['172.25.199.101:9092']
 KAFKA_TOPIC = 'clickstream_topic'
 
-# Load products
-with open('/home/jeevan/pulseprice/data_generator/products.json', 'r') as f:
+# Load products (use relative path for portability)
+_products_path = os.path.join(os.path.dirname(__file__), 'products.json')
+with open(_products_path, 'r') as f:
     PRODUCTS = json.load(f)
 
 PRODUCT_IDS = [p['id'] for p in PRODUCTS]
@@ -25,12 +27,26 @@ PRODUCT_IDS = [p['id'] for p in PRODUCTS]
 NUM_USERS = 1000
 USER_IDS = [f"user_{str(uuid.uuid4())[:8]}" for _ in range(NUM_USERS)]
 
-# Event type weights (view is most common)
+# Event type weights (Balanced for Demo: some drops, some surges)
 EVENT_WEIGHTS = {
-    'view': 0.65,
-    'add_to_cart': 0.25,
-    'purchase': 0.10
+    'view': 0.80,
+    'add_to_cart': 0.15,
+    'purchase': 0.05
 }
+
+# --- Demo "Viral" Logic ---
+# These products get massive traffic boosts to ensure "Active Surges" always has data
+HOT_PRODUCTS = set()
+LAST_ROTATION = 0
+
+def update_hot_products():
+    """Pick 2 random products to be 'viral' every 2 minutes"""
+    global HOT_PRODUCTS, LAST_ROTATION
+    now = time.time()
+    if now - LAST_ROTATION > 120:  # Rotate every 2 mins
+        HOT_PRODUCTS = set(random.sample(PRODUCT_IDS, 2))
+        LAST_ROTATION = now
+        print(f"🔥 Trending Now: Products {HOT_PRODUCTS}")
 
 # Product popularity weights (some products more popular)
 PRODUCT_WEIGHTS = []
@@ -62,8 +78,18 @@ def get_demand_multiplier():
 
 def generate_event():
     """Generate a single click event"""
+    update_hot_products()
+    
+    # Calculate weights dynamically based on "Hotness"
+    dynamic_weights = []
+    for p, base_w in zip(PRODUCTS, PRODUCT_WEIGHTS):
+        if p['id'] in HOT_PRODUCTS:
+            dynamic_weights.append(base_w * 10) # 10x traffic boost for viral items
+        else:
+            dynamic_weights.append(base_w)
+
     user_id = random.choice(USER_IDS)
-    product = random.choices(PRODUCTS, weights=PRODUCT_WEIGHTS, k=1)[0]
+    product = random.choices(PRODUCTS, weights=dynamic_weights, k=1)[0]
     event_type = random.choices(
         list(EVENT_WEIGHTS.keys()),
         weights=list(EVENT_WEIGHTS.values()),
