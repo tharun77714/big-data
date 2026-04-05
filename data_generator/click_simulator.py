@@ -13,7 +13,7 @@ from datetime import datetime
 from kafka import KafkaProducer
 
 # Kafka configuration
-KAFKA_BOOTSTRAP_SERVERS = ['172.25.199.101:9092']
+KAFKA_BOOTSTRAP_SERVERS = ['localhost:9092']
 KAFKA_TOPIC = 'clickstream_topic'
 
 # Load products (use relative path for portability)

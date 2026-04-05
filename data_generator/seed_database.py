@@ -10,7 +10,7 @@ import psycopg2
 from psycopg2.extras import execute_values
 
 DB_CONFIG = {
-    'host': '172.25.199.101',
+    'host': 'localhost',
     'database': 'pulseprice_db',
     'user': 'pulseprice',
     'password': 'pulse2024',

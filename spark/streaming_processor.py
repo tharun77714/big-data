@@ -11,10 +11,10 @@ from kafka import KafkaConsumer
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from ml.price_predictor import predict_price
 
-KAFKA_BOOTSTRAP = "172.25.199.101:9092"
+KAFKA_BOOTSTRAP = "localhost:9092"
 KAFKA_TOPIC = "clickstream_topic"
 DB_CONFIG = {
-    'host': '172.25.199.101',
+    'host': 'localhost',
     'database': 'pulseprice_db',
     'user': 'pulseprice',
     'password': 'pulse2024',
