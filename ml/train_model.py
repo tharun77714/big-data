@@ -19,7 +19,7 @@ def load_data():
     """Load training data from CSV"""
     data_path = os.path.join(os.path.dirname(__file__), 'training_data.csv')
     if not os.path.exists(data_path):
-        print("❌ training_data.csv not found! Run generate_training_data.py first.")
+        print("❌ training_data.csv not found! Run process_historical_data.py first.")
         exit(1)
     df = pd.read_csv(data_path)
     print(f"Loaded {len(df)} training samples")

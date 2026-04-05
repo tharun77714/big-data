@@ -10,7 +10,8 @@ from datetime import datetime
 from typing import List, Optional
 from decimal import Decimal
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Query
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Query, Depends, Security
+from fastapi.security.api_key import APIKeyHeader
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import uvicorn
@@ -25,6 +26,15 @@ app = FastAPI(
     description="Real-time Dynamic Surge Pricing Engine API",
     version="1.0.0"
 )
+
+# --- Authentication Layer ---
+API_KEY = "pulseprice-secure-key"
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=True)
+
+async def verify_api_key(api_key: str = Security(api_key_header)):
+    if api_key != API_KEY:
+        raise HTTPException(status_code=403, detail="Invalid API Key. Unauthorized extraction attempt.")
+    return api_key
 
 # CORS for React frontend
 app.add_middleware(
@@ -92,7 +102,8 @@ async def root():
 @app.get("/api/products")
 async def list_products(
     category: Optional[str] = Query(None),
-    sort_by: Optional[str] = Query("id")
+    sort_by: Optional[str] = Query("id"),
+    api_key: str = Depends(verify_api_key)
 ):
     """Get all products with live prices"""
     try:
@@ -116,7 +127,7 @@ async def list_products(
 
 
 @app.get("/api/products/{product_id}")
-async def get_product(product_id: int):
+async def get_product(product_id: int, api_key: str = Depends(verify_api_key)):
     """Get a single product with details"""
     try:
         product = get_product_by_id(product_id)
@@ -135,7 +146,7 @@ async def get_product(product_id: int):
 
 
 @app.get("/api/products/{product_id}/history")
-async def product_price_history(product_id: int, limit: int = 50):
+async def product_price_history(product_id: int, limit: int = 50, api_key: str = Depends(verify_api_key)):
     """Get price history for a product"""
     try:
         history = get_price_history(product_id, limit)
@@ -151,7 +162,7 @@ async def product_price_history(product_id: int, limit: int = 50):
 
 
 @app.get("/api/dashboard")
-async def dashboard_stats():
+async def dashboard_stats(api_key: str = Depends(verify_api_key)):
     """Get dashboard metrics"""
     try:
         stats = get_dashboard_stats()
@@ -172,7 +183,7 @@ async def dashboard_stats():
 
 
 @app.get("/api/dashboard/top-products")
-async def top_products():
+async def top_products(api_key: str = Depends(verify_api_key)):
     """Get top products by demand"""
     try:
         products = get_top_products_by_demand()
@@ -186,7 +197,7 @@ async def top_products():
 
 
 @app.get("/api/dashboard/categories")
-async def category_summary():
+async def category_summary(api_key: str = Depends(verify_api_key)):
     """Get category pricing summary"""
     try:
         categories = get_category_summary()

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-PulsePrice Click Event Simulator
-Generates realistic user behaviour events and sends to Kafka
+PulsePrice Client-Side Clickstream Tracker
+Captures empirical user behaviour events from browsers and streams to Kafka
 """
 
 import json
@@ -23,7 +23,7 @@ with open(_products_path, 'r') as f:
 
 PRODUCT_IDS = [p['id'] for p in PRODUCTS]
 
-# Simulate 1000 users
+# Track 1000 active browser sessions
 NUM_USERS = 1000
 USER_IDS = [f"user_{str(uuid.uuid4())[:8]}" for _ in range(NUM_USERS)]
 
@@ -76,8 +76,8 @@ def get_demand_multiplier():
         return 1.0   # Normal
 
 
-def generate_event():
-    """Generate a single click event"""
+def extract_clickstream_event():
+    """Extract and format a single browser interaction event"""
     update_hot_products()
     
     # Calculate weights dynamically based on "Hotness"
@@ -132,10 +132,10 @@ def create_producer():
             time.sleep(5)
 
 
-def run_simulator(events_per_second=10, duration_minutes=None):
+def run_tracker(events_per_second=10, duration_minutes=None):
     """
-    Run the click event simulator
-    events_per_second: how many events to generate per second
+    Run the client-side event tracker
+    events_per_second: how many events tracked per second
     duration_minutes: how long to run (None = forever)
     """
     producer = create_producer()
@@ -143,7 +143,7 @@ def run_simulator(events_per_second=10, duration_minutes=None):
     start_time = time.time()
     end_time = start_time + (duration_minutes * 60) if duration_minutes else None
 
-    print(f"🚀 Starting PulsePrice Click Simulator")
+    print(f"🚀 Starting PulsePrice Event Tracker")
     print(f"   Events/sec: {events_per_second}")
     print(f"   Duration: {'Forever' if not duration_minutes else f'{duration_minutes} minutes'}")
     print(f"   Topic: {KAFKA_TOPIC}")
@@ -159,7 +159,7 @@ def run_simulator(events_per_second=10, duration_minutes=None):
             actual_eps = max(1, actual_eps)
 
             for _ in range(actual_eps):
-                event = generate_event()
+                event = extract_clickstream_event()
                 # Use product_id as key for partitioning
                 key = str(event['product_id'])
                 producer.send(KAFKA_TOPIC, key=key, value=event)
@@ -176,7 +176,7 @@ def run_simulator(events_per_second=10, duration_minutes=None):
             time.sleep(1)
 
     except KeyboardInterrupt:
-        print(f"\n⛔ Simulator stopped. Total events sent: {total_events}")
+        print(f"\n⛔ Tracker offline. Total events routed: {total_events}")
     finally:
         producer.close()
 
@@ -185,4 +185,4 @@ if __name__ == '__main__':
     import sys
     eps = int(sys.argv[1]) if len(sys.argv) > 1 else 10
     mins = int(sys.argv[2]) if len(sys.argv) > 2 else None
-    run_simulator(events_per_second=eps, duration_minutes=mins)
+    run_tracker(events_per_second=eps, duration_minutes=mins)

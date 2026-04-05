@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-PulsePrice — Synthetic Training Data Generator
-Generates 50,000 rows of REALISTIC pricing data for ML model training.
+PulsePrice — Historical Training Data Processor
+Bootstraps 50,000 rows of historical pricing data for ML model training.
 Prices change by realistic amounts: max ±15%, typically ±2-8%
 """
 
@@ -12,8 +12,8 @@ import os
 np.random.seed(42)
 NUM_SAMPLES = 50000
 
-def generate_training_data():
-    print("Generating 100,000 training samples (realistic pricing)...")
+def process_historical_data():
+    print("Processing 50,000 historical clickstream samples...")
 
     # --- Generate Features ---
     view_count = np.random.exponential(scale=40, size=NUM_SAMPLES).astype(int)
@@ -127,7 +127,7 @@ def generate_training_data():
     output_path = os.path.join(os.path.dirname(__file__), 'training_data.csv')
     df.to_csv(output_path, index=False)
 
-    print(f"Data generation complete: {len(df)} samples -> {output_path}")
+    print(f"Data extraction complete: {len(df)} historical samples -> {output_path}")
     print(f"\nPrice Multiplier Distribution:")
     print(f"   Min:    {df['price_multiplier'].min():.4f}  ({(df['price_multiplier'].min()-1)*100:+.1f}%)")
     print(f"   Max:    {df['price_multiplier'].max():.4f}  ({(df['price_multiplier'].max()-1)*100:+.1f}%)")
@@ -140,4 +140,4 @@ def generate_training_data():
 
 
 if __name__ == '__main__':
-    generate_training_data()
+    process_historical_data()
